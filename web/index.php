@@ -52,5 +52,6 @@ $app->get('/dashboard/connections', '\\Neo4j\\Alexa\\Controller\\DashboardContro
 
 $app->post('/intent', '\\Neo4j\\Alexa\\Controller\\IntentController::handleIntent');
 
+$app->get('/intent', '\\Neo4j\\Alexa\\Controller\\IntentController::handleIntent');
 // Run the application
 $app->run();
