@@ -32,7 +32,7 @@ class IntentController extends Controller
 
             try {
                 $neo4jClient->run(
-                'CREATE (n:Interaction) SET n = {values}', 
+                'CREATE (n:Interaction) SET n = {values}',
                 ['values' => ['intent' => $intent, 'slots' => json_encode($slots), 'time' => $ts]],
                 null,"alexa");
             } catch (\Exception $e) {
@@ -100,9 +100,9 @@ class IntentController extends Controller
 
              ["first"=>$slots['first'],"second"=>$slots['second']],null,$database)->firstRecord();
 
-             $response = sprintf('Between %s and %s there are %s', 
-                $result->get("first") ?: $slots['first'], 
-                $result->get("second") ?: $slots['second'], 
+             $response = sprintf('Between %s and %s there are %s',
+                $result->get("first") ?: $slots['first'],
+                $result->get("second") ?: $slots['second'],
                 implode(', ', $result->get("names")));
         }
 
@@ -172,7 +172,7 @@ class IntentController extends Controller
 
         $text = explode(' ', $slot);
 
-        $query = ' 
+        $query = '
         CREATE (i:RawText {time: timestamp()})
         WITH i
         UNWIND range(1, size({words})-1) AS e
@@ -208,7 +208,7 @@ class IntentController extends Controller
 
         $text = explode(' ', $slots['Text']);
 
-        $query = ' 
+        $query = '
         CREATE (i:RawText {time: timestamp()})
         WITH i
         UNWIND range(1, size({words})-1) AS e
@@ -244,4 +244,29 @@ class IntentController extends Controller
 
         return LevenshteinLabel::getNearest($input, $aliases, true);
     }
+    public function getNodesCount(Request $request, Application $application)
+{
+   /** @var Client $client */
+   $client = $application['neo4j'];
+
+   $content = json_decode($request->getContent(), true);
+
+   $intent = $content['request']['intent']['name'];
+   $slots = [];
+   foreach ($content['request']['intent']['slots'] as $slot) {
+       $slots[$slot['name']] = $slot['value'];
+   }
+
+   if (!array_key_exists('nodeLabel', $slots)) {
+       throw new \RuntimeException(sprintf('Expected a slot named %s', 'nodeLabel'));
+   }
+
+   $label = ucfirst(strtolower(trim($slots['nodeLabel'])));
+   $query = sprintf('MATCH (n:`%s`) RETURN count(n) AS c', $label);
+   $result = $client->run($query)->firstRecord()->get('c');
+
+   return $this->returnAlexaResponse('Nodes Count', self::TEXT_TYPE, sprintf('There are %d %s nodes in the database', $result, $label));
+}
+
+
 }
